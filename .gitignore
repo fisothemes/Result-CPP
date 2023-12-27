@@ -1,0 +1,34 @@
+# Ignore build directories
+/bin/
+/build/
+/CMakeFiles/
+/CMakeCache.txt
+/CMakeScripts/
+
+# Ignore executables and shared libraries
+*.exe
+*.dll
+*.so
+*.out
+
+# Ignore Visual Studio Code settings
+.vscode/
+
+# Ignore Visual Studio settings
+.vs/
+
+# Ignore user-specific files
+*.user
+*.suo
+*.userprefs
+*.ncb
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore generated documentation
+/docs/html/
+/docs/latex/
+
+# Ignore the CMake install manifest
+install_manifest.txt
