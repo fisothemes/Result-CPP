@@ -95,6 +95,17 @@ class result final {
     }
   }
 
+  ~result(){
+    switch (m_state) {
+      case result_state::success: 
+        m_value.~T();
+        break;
+      case result_state::error:
+        m_error.~E();
+    }
+
+  }
+
   /**
    * @brief Retrieves the success value if the result is in a success state.
    * @tparam T Type of the success value.
@@ -226,8 +237,10 @@ class result final {
 
  private:
   result_state m_state;
+  union {
   T m_value;
   E m_error;
+  };
 };
 
 }  // namespace fst
