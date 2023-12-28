@@ -1,6 +1,6 @@
 // Result.h
-#ifndef RESULT_HPP
-#define RESULT_HPP
+#ifndef FST_RESULT_HPP
+#define FST_RESULT_HPP
 
 #include <exception>
 #include <iostream>
@@ -95,15 +95,14 @@ class result final {
     }
   }
 
-  ~result(){
+  ~result() {
     switch (m_state) {
-      case result_state::success: 
+      case result_state::success:
         m_value.~T();
         break;
       case result_state::error:
         m_error.~E();
     }
-
   }
 
   /**
@@ -238,11 +237,11 @@ class result final {
  private:
   result_state m_state;
   union {
-  T m_value;
-  E m_error;
+    T m_value;
+    E m_error;
   };
 };
 
 }  // namespace fst
 
-#endif  // RESULT_HPP
+#endif  // FST_RESULT_HPP
