@@ -1,6 +1,7 @@
-#include "fst/result.hpp"
 #include <iostream>
 #include <string>
+
+#include "fst/result.hpp"
 
 // Function that may fail and return a Result
 fst::result<double, std::string> div(double a, double b) {

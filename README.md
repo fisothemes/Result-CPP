@@ -1,6 +1,6 @@
 # Result-CPP
 
-Result-CPP is a lightweight, header-only C++ library that provides a result type for handling success and error states.
+Result-CPP is a lightweight, header-only C++ library for monadic error handling in C++ using a result type.
 
 ## Features
 
@@ -22,25 +22,23 @@ Result-CPP is a lightweight, header-only C++ library that provides a result type
 ### Examples
 
 ```cpp
-#include <iostream>
 #include "fst/result.hpp"
 
-int main() {
-    // Creating a result with a success value
-    fst::result<int, std::string> successResult(42);
+// Function that may fail and return a Result
+fst::result<double, std::string> div(double a, double b) {
+  if (b == 0.0)
+    return std::string("Division by zero error");
 
-    // Accessing success value
-    if (successResult) {
-        std::cout << "Success: " << *successResult << std::endl;
-    }
-
-    // Creating a result with an error value
-    fst::result<int, std::string> errorResult("Error occurred");
-
-    // Accessing error value
-    if (!errorResult) {
-        std::cout << "Error: " << errorResult.error() << std::endl;
-    }
-
-    return 0;
+  return a / b;
 }
+
+int main() {
+  // Example 1: Successful Result | Output: Result 1 value: 5
+  std::cout << "Result 1 value: " << div(10.0, 2.0) << std::endl; 
+
+  // Example 2: Errored Result | Output: Result 2 error: Division by zero error
+  std::cout << "Result 2 error: " << div(5.0, 0.0) << std::endl;
+
+  return 0;
+}
+```
