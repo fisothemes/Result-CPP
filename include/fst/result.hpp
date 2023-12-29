@@ -8,7 +8,6 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
-#include <variant>
 
 namespace fst {
 
@@ -78,12 +77,11 @@ class result final {
   /**
    * @brief Constructor for a result with a specified state and value.
    *
-   * @tparam T The type of the success value.
+   * @tparam T The type of the value.
    * @param state The state of the result (success or error).
    * @param value The success value to be stored if the state is success.
    */
-  template <typename U = T, std::enable_if<std::is_same_v<U, E>>* = nullptr>
-  constexpr result(const result_state state, const T& value) : m_state(state) {
+  constexpr result(const result_state& state, const T& value) : m_state(state) {
     switch (state) {
       case result_state::success:
         m_value = value;
@@ -92,6 +90,38 @@ class result final {
       case result_state::error:
         m_error = value;
         break;
+    }
+  }
+
+    /**
+   * @brief Constructor for a result with a specified state and value.
+   *
+   * @tparam E The type of the error value.
+   * @param state The state of the result (success or error).
+   * @param value The success value to be stored if the state is success.
+   */
+  template <typename U = E, std::enable_if<!std::is_same_v<T, U>>* = nullptr>
+  constexpr result(const result_state& state, const E& value) : m_state(state) {
+    switch (state) {
+      case result_state::error:
+        m_error = value;
+        break;
+    }
+  }
+
+  // move constructor.
+  result(result<T, E>&& res) : m_state(res.state()) {
+    switch (m_state) {
+      case result_state::success:
+        m_value = std::move(res.value());
+        break;
+      case result_state::error:
+        m_error = std::move(*res.error());
+        break;
+      case result_state::empty:
+        break;
+      default:
+        throw bad_result_access("Invalid state in move constructor");
     }
   }
 
@@ -201,11 +231,25 @@ class result final {
     return m_state == result_state::success ? result<T, U>(value()) : res;
   }
 
-  template <typename U, typename F>
-  [[nodiscard]] constexpr const result<T, U> or_else(F f) const;
+  [[nodiscard]] constexpr const result<T, E> or_else(
+      result<T, E> f(const E& error)) const {
+    return m_state == result_state::success
+               ? result<T, E>(result_state::success, m_value)
+               : f(m_error);
+  }
 
-  template <typename U, typename F>
-  [[nodiscard]] constexpr const result<U, E> and_then(F f) const;
+  [[nodiscard]] constexpr const result<T, E> or_else(result<T, E> f(E& error)) {
+    return m_state == result_state::success
+               ? result<T, E>(result_state::success, m_value)
+               : f(m_error);
+  }
+
+  [[nodiscard]] constexpr const result<T, E> and_then(
+      result<T, E> f(const T& value)) const {
+    return m_state == result_state::success
+               ? f(m_value)
+               : result<T, E>(result_state::error, m_error);
+  }
 
   explicit operator bool() const { return m_state == result_state::success; }
 

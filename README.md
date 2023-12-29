@@ -22,6 +22,10 @@ Result-CPP is a lightweight, header-only C++ library for monadic error handling 
 ### Examples
 
 ```cpp
+#include <iostream>
+#include <string>
+#include <limits>
+
 #include "fst/result.hpp"
 
 // Function that may fail and return a Result
@@ -38,6 +42,29 @@ int main() {
 
   // Example 2: Errored Result | Output: Result 2 error: Division by zero error
   std::cout << "Result 2 error: " << div(5.0, 0.0) << std::endl;
+
+  // Example 3: Chaining Operations - using or_else
+  //            | Output: Handling error: Division by zero error
+  //                      Result 3: inf
+  auto result3 = div(5.0, 0.0)
+    .or_else([](const std::string& error) {
+      std::cout << "Handling error: " << error << std::endl;
+      return fst::result<double, std::string>(
+          std::numeric_limits<double>::infinity());
+    });
+
+  std::cout << "Result 3: " << result3 << '\n';
+
+  // Example 4: Chaining Operations - using and_then
+  //            | Output: Handling success: 5
+  //                      Result 4: 2.5
+  auto result4 = div(10.0, 2.0)
+    .and_then([](const double& value) {
+      std::cout << "Handling success: " << value << std::endl;
+      return div(value, 2.0);
+    });
+
+  std::cout << "Result 4: " << result4 << '\n';
 
   return 0;
 }
