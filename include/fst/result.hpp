@@ -231,20 +231,20 @@ class result final {
     return m_state == result_state::success ? result<T, U>(value()) : res;
   }
 
-  [[nodiscard]] constexpr const result<T, E> or_else(
+  constexpr const result<T, E> or_else(
       result<T, E> f(const E& error)) const {
     return m_state == result_state::success
                ? result<T, E>(result_state::success, m_value)
                : f(m_error);
   }
 
-  [[nodiscard]] constexpr const result<T, E> or_else(result<T, E> f(E& error)) {
+  constexpr const result<T, E> or_else(result<T, E> f(E& error)) {
     return m_state == result_state::success
                ? result<T, E>(result_state::success, m_value)
                : f(m_error);
   }
 
-  [[nodiscard]] constexpr const result<T, E> and_then(
+  constexpr const result<T, E> and_then(
       result<T, E> f(const T& value)) const {
     return m_state == result_state::success
                ? f(m_value)
