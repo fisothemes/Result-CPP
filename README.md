@@ -35,11 +35,11 @@ int main() {
                         .or_else([](const std::string& error) {
                           std::cerr << "Error: " << error << std::endl;
                         })
-                        .and_then([&](auto&) { return closeFile(fileResult.value()); });
+                        .and_then([](std::ifstream& file) { return closeFile(file); });
 
   // Check if the file operations were successful
   if (!fileResult) {
-    std::cerr << "File operation failed!" << std::endl;
+    std::cerr << fileResult << std::endl;
   }
 
   return 0;
@@ -57,20 +57,20 @@ fst::result<std::ifstream, std::string> openFile(const std::string& filename) {
 }
 
 // Function to process a file
-fst::result<void, std::string> processFile(std::ifstream& file) {
+fst::result<std::ifstream, std::string> processFile(std::ifstream& file) {
   // Perform file processing here
   if (!file.good()) {
     return std::string("Error while processing file");
   }
-  return {};
+  return file;
 }
 
 // Function to close a file
-fst::result<void, std::string> closeFile(std::ifstream& file) {
+fst::result<std::ifstream, std::string> closeFile(std::ifstream& file) {
   file.close();
   if (file.fail()) {
     return std::string("Error closing file");
   }
-  return {};
+  return file;
 }
 ```
