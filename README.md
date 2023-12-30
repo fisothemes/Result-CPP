@@ -1,14 +1,14 @@
 # Result-CPP
 
-Result-CPP is a lightweight, header-only C++ library for monadic error handling in C++ using a result type.
+Result-CPP is a lightweight, header-only C++ library for error handling using the monadic pattern in C++. It provides a generic class called `result` that can store either a successful value or an error value as well as ways to extract and handle them.
 
 ## Features
 
 - Simple and concise result type for error handling.
 - Header-only library with no external dependencies.
-- Supports chaining operations and handling errors elegantly. (W-I-P)
+- Supports chaining operations and handling errors.
 
-## Getting Started (W-I-P)
+## Getting Started
 
 ### Prerequisites
 
@@ -19,53 +19,58 @@ Result-CPP is a lightweight, header-only C++ library for monadic error handling 
 1. Include the `result.hpp` header in your C++ project.
 2. Start using the `fst::result` type for handling success and error states.
 
-### Examples
+### Example
 
 ```cpp
 #include <iostream>
+#include <fstream>
 #include <string>
-#include <limits>
 
 #include "fst/result.hpp"
 
-// Function that may fail and return a Result
-fst::result<double, std::string> div(double a, double b) {
-  if (b == 0.0)
-    return std::string("Division by zero error");
-
-  return a / b;
-}
-
 int main() {
-  // Example 1: Successful Result | Output: Result 1 value: 5
-  std::cout << "Result 1 value: " << div(10.0, 2.0) << std::endl; 
+  // Example usage
+  auto fileResult = openFile("example.txt")
+                        .and_then(processFile)
+                        .or_else([](const std::string& error) {
+                          std::cerr << "Error: " << error << std::endl;
+                        })
+                        .and_then([&](auto&) { return closeFile(fileResult.value()); });
 
-  // Example 2: Errored Result | Output: Result 2 error: Division by zero error
-  std::cout << "Result 2 error: " << div(5.0, 0.0) << std::endl;
-
-  // Example 3: Chaining Operations - using or_else
-  //            | Output: Handling error: Division by zero error
-  //                      Result 3: inf
-  auto result3 = div(5.0, 0.0)
-    .or_else([](const std::string& error) {
-      std::cout << "Handling error: " << error << std::endl;
-      return fst::result<double, std::string>(
-          std::numeric_limits<double>::infinity());
-    });
-
-  std::cout << "Result 3: " << result3 << '\n';
-
-  // Example 4: Chaining Operations - using and_then
-  //            | Output: Handling success: 5
-  //                      Result 4: 2.5
-  auto result4 = div(10.0, 2.0)
-    .and_then([](const double& value) {
-      std::cout << "Handling success: " << value << std::endl;
-      return div(value, 2.0);
-    });
-
-  std::cout << "Result 4: " << result4 << '\n';
+  // Check if the file operations were successful
+  if (!fileResult) {
+    std::cerr << "File operation failed!" << std::endl;
+  }
 
   return 0;
+}
+```
+
+```cpp
+// Function to open a file and return a result
+fst::result<std::ifstream, std::string> openFile(const std::string& filename) {
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    return std::string("Failed to open file: " + filename);
+  }
+  return file;
+}
+
+// Function to process a file
+fst::result<void, std::string> processFile(std::ifstream& file) {
+  // Perform file processing here
+  if (!file.good()) {
+    return std::string("Error while processing file");
+  }
+  return {};
+}
+
+// Function to close a file
+fst::result<void, std::string> closeFile(std::ifstream& file) {
+  file.close();
+  if (file.fail()) {
+    return std::string("Error closing file");
+  }
+  return {};
 }
 ```
