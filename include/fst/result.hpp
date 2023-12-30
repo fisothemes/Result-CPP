@@ -18,17 +18,35 @@ namespace fst {
  */
 enum class result_state : unsigned char { empty, success, error };
 
-std::ostream& operator<<(std::ostream& os, const result_state& state) {
+/**
+ * @brief Converts a result_state enum to a string.
+ *
+ * @param state The result_state to convert.
+ * @return A string representation of the result_state.
+ */
+std::string to_string(const result_state& state) {
   switch (state) {
     case result_state::empty:
-      return os << "empty";
+      return "empty";
     case result_state::success:
-      return os << "success";
+      return "success";
     case result_state::error:
-      return os << "error";
+      return "error";
     default:
-      return os << "unknown";
+      return "unknown";
   }
+}
+
+/**
+ * @brief Converts a result_state enum to a string and streams it to an output
+ * stream.
+ *
+ * @param os The output stream to write to.
+ * @param state The result_state to convert and stream.
+ * @return The modified output stream.
+ */
+std::ostream& operator<<(std::ostream& os, const result_state& state) {
+  return os << to_string(state);
 }
 
 /**
@@ -48,6 +66,15 @@ class bad_result_access : public std::exception {
   const char* m_reason = "bad result access";
 };
 
+/**
+ * @brief Generic class that implements the monadic pattern for error handling.
+ * It can store either a successful value of type T or an error value of type E.
+ * The class includes methods for extracting the success or error values safely
+ * and handling different outcomes through chaining operations.
+ *
+ * @tparam T Type of the success value.
+ * @tparam E Type of the error value.
+ */
 template <typename T, typename E>
 class result final {
  public:
@@ -93,7 +120,7 @@ class result final {
     }
   }
 
-    /**
+  /**
    * @brief Constructor for a result with a specified state and value.
    *
    * @tparam E The type of the error value.
@@ -109,7 +136,6 @@ class result final {
     }
   }
 
-  // move constructor.
   result(result<T, E>&& res) : m_state(res.state()) {
     switch (m_state) {
       case result_state::success:
@@ -231,35 +257,206 @@ class result final {
     return m_state == result_state::success ? result<T, U>(value()) : res;
   }
 
-  constexpr const result<T, E> or_else(
-      result<T, E> f(const E& error)) const {
+  /**
+   * @brief Applies the provided function to the error value if the result is in
+   * an error state.
+   *
+   * If the result is in a success state, returns a new result with the success
+   * value. If the result is in an error state, applies the provided function to
+   * the error value and returns the result.
+   *
+   * @tparam T Type of the success value.
+   * @tparam E Type of the error value.
+   * @param f Function to be applied to the error value if the result is in an
+   * error state.
+   * @return The original success result or the result of applying the function
+   * to the error value.
+   */
+  constexpr const result<T, E> or_else(result<T, E> f(const E& error)) const {
     return m_state == result_state::success
                ? result<T, E>(result_state::success, m_value)
                : f(m_error);
   }
 
+  /**
+   * @brief Applies the provided function to the error value if the result is in
+   * an error state.
+   *
+   * If the result is in a success state, returns a new result with the success
+   * value. If the result is in an error state, applies the provided function to
+   * the error value and returns the result.
+   *
+   * @tparam T Type of the success value.
+   * @tparam E Type of the error value.
+   * @param f Function to be applied to the error value if the result is in an
+   * error state.
+   * @return The original success result or the result of applying the function
+   * to the error value.
+   */
   constexpr const result<T, E> or_else(result<T, E> f(E& error)) {
     return m_state == result_state::success
                ? result<T, E>(result_state::success, m_value)
                : f(m_error);
   }
 
-  constexpr const result<T, E> and_then(
-      result<T, E> f(const T& value)) const {
+  /**
+   * @brief Applies the provided function to the error value if the result is in
+   * an error state.
+   *
+   * If the result is in a success state, returns a new result with the success
+   * value. If the result is in an error state, applies the provided function to
+   * the error value and returns the result.
+   *
+   * @tparam T Type of the success value.
+   * @tparam E Type of the error value.
+   * @param f Function to be applied to the error value if the result is in an
+   * error state.
+   * @return The original success result or the result of applying the function
+   * to the error value.
+   */
+  constexpr const result<T, E> or_else(result<T, E> f(E&& error)) {
+    return m_state == result_state::success
+               ? result<T, E>(result_state::success, m_value)
+               : f(std::forward<E>(m_error));
+  }
+
+  /**
+   * @brief Applies the provided function to the error value if the result is in
+   * an error state.
+   *
+   * If the result is in a success state, returns a new result with the success
+   * value. If the result is in an error state, applies the provided function to
+   * the error value and returns the result.
+   *
+   * @tparam T Type of the success value.
+   * @tparam E Type of the error value.
+   * @param f Function to be applied to the error value if the result is in an
+   * error state.
+   * @return The original success result or the result of applying the function
+   * to the error value.
+   */
+  constexpr const result<T, E> or_else(result<T, E> f(E error)) {
+    return m_state == result_state::success
+               ? result<T, E>(result_state::success, m_value)
+               : f(m_error);
+  }
+
+  /**
+   * @brief Applies the provided function to the success value if the result is
+   * in a success state.
+   *
+   * If the result is in an error state, returns a new result with the error
+   * value. If the result is in a success state, applies the provided function
+   * to the success value and returns the result.
+   *
+   * @tparam T Type of the success value.
+   * @tparam E Type of the error value.
+   * @param f Function to be applied to the success value if the result is in a
+   * success state.
+   * @return The original error result or the result of applying the function to
+   * the success value.
+   */
+  constexpr const result<T, E> and_then(result<T, E> f(const T& value)) const {
     return m_state == result_state::success
                ? f(m_value)
                : result<T, E>(result_state::error, m_error);
   }
 
+  /**
+   * @brief Applies the provided function to the success value if the result is
+   * in a success state.
+   *
+   * If the result is in an error state, returns a new result with the error
+   * value. If the result is in a success state, applies the provided function
+   * to the success value and returns the result.
+   *
+   * @tparam T Type of the success value.
+   * @tparam E Type of the error value.
+   * @param f Function to be applied to the success value if the result is in a
+   * success state.
+   * @return The original error result or the result of applying the function to
+   * the success value.
+   */
+  constexpr const result<T, E> and_then(result<T, E> f(T& value)) {
+    return m_state == result_state::success
+               ? f(m_value)
+               : result<T, E>(result_state::error, m_error);
+  }
+
+  /**
+   * @brief Applies the provided function to the success value if the result is
+   * in a success state.
+   *
+   * If the result is in an error state, returns a new result with the error
+   * value. If the result is in a success state, applies the provided function
+   * to the success value and returns the result.
+   *
+   * @tparam T Type of the success value.
+   * @tparam E Type of the error value.
+   * @param f Function to be applied to the success value if the result is in a
+   * success state.
+   * @return The original error result or the result of applying the function to
+   * the success value.
+   */
+  constexpr const result<T, E> and_then(result<T, E> f(T&& value)) {
+    return m_state == result_state::success
+               ? f(std::forward<T>(m_value))
+               : result<T, E>(result_state::error, m_error);
+  }
+
+  /**
+   * @brief Applies the provided function to the success value if the result is
+   * in a success state.
+   *
+   * If the result is in an error state, returns a new result with the error
+   * value. If the result is in a success state, applies the provided function
+   * to the success value and returns the result.
+   *
+   * @tparam T Type of the success value.
+   * @tparam E Type of the error value.
+   * @param f Function to be applied to the success value if the result is in a
+   * success state.
+   * @return The original error result or the result of applying the function to
+   * the success value.
+   */
+  constexpr const result<T, E> and_then(result<T, E> f(T value)) const {
+    return m_state == result_state::success
+               ? f(m_value)
+               : result<T, E>(result_state::error, m_error);
+  }
+
+  /**
+   * @brief Explicit conversion to bool.
+   * @return True if the result is in a success state; otherwise, false.
+   */
   explicit operator bool() const { return m_state == result_state::success; }
 
+  /**
+   * @brief Dereference operator.
+   * @return Const reference to the success value.
+   * @throw bad_result_access If the result is not in a success state.
+   */
   const T& operator*() const { return value(); }
 
+  /**
+   * @brief Converts the result to a different result type, mapping the success
+   * value with the provided conversion function.
+   * @tparam U Type of the success value in the new result.
+   * @tparam E Type of the error value in the original result.
+   * @return A new result with the success value converted to type U.
+   */
   template <typename U>
   constexpr operator result<U, E>() const {
     return result<U, E>(U(value()));
   }
 
+  /**
+   * @brief Converts the result to a different result type, mapping the error
+   * value with the provided conversion function.
+   * @tparam T Type of the success value in the original result.
+   * @tparam U Type of the error value in the new result.
+   * @return A new result with the error value converted to type E.
+   */
   template <typename U>
   constexpr operator result<T, U>() const {
     return result<T, U>(U(*error()));
