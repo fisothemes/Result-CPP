@@ -1,0 +1,6 @@
+PROJECT_NAME           = "Result-CPP"
+PROJECT_NUMBER         = @PROJECT_VERSION@
+PROJECT_BRIEF          = "A lightweight, header-only C++ library for error handling using the monadic pattern in C++. It provides a generic class called result that can store either a successful value or an error value as well as ways to extract and handle them."
+
+OUTPUT_DIRECTORY       = "@CMAKE_CURRENT_SOURCE_DIR@/docs/"
+INPUT                  = "@CMAKE_CURRENT_SOURCE_DIR@/include/fst/" "@CMAKE_CURRENT_SOURCE_DIR@/docs"
