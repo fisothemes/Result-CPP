@@ -29,6 +29,7 @@
 # Ignore generated documentation
 /docs/html/
 /docs/latex/
+Doxyfile
 
 # Ignore the CMake install manifest
 install_manifest.txt
