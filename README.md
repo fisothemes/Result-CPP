@@ -23,55 +23,75 @@ Result-CPP is a lightweight, header-only C++ library for error handling using th
 
 ```cpp
 #include <iostream>
-#include <fstream>
-#include <string>
+#include <limits>
 
 #include "fst/result.hpp"
 
-int main() {
-  // Example usage
-  auto fileResult = openFile("example.txt")
-                        .and_then(processFile)
-                        .or_else([](const std::string& error) {
-                          std::cerr << "Error: " << error << std::endl;
-                          return fst::result<std::ifstream, std::string>(error)
-                        })
-                        .and_then([](std::ifstream& file) { return closeFile(file); });
+// Function that may fail and return a Result
+fst::result<double, std::string> div(double a, double b) {
+  if (b == 0.0)
+    return std::string("Division by zero error");  // Implicitly converts to std::string
+  return a / b;  // Implicitly converts to double
+}
 
-  // Check if the file operations were successful
-  if (!fileResult) {
-    std::cerr << fileResult << std::endl;
-  }
+int main() {
+// Example 1: Chaining with `and_then` and `map`
+auto result1 = div(12.0, 3.0)
+                    .and_then([](const auto& x) {
+                      return x > 0.0 
+                          ? fst::result<double, std::string>(x * 2.0) 
+                          : fst::result<double, std::string>("Negative result");
+                    })
+                    .map([](const auto& y) {
+                      std::cout << "Result: " + std::to_string(y) << '\n';
+                      return y*y;
+                    });
+
+std::cout << "Example 1: " << result1 << '\n';
+
+// Example 2: Chaining with `or_else` and `map_error`
+auto result2 = div(10.0, 0.0)
+                    .or_else([](const auto& error) {
+                      return fst::result<double, std::string>("Error: " + error);
+                    })
+                    .map_error([](const std::string& original_error) {
+                      return original_error + " (mapped)";
+                    });
+
+std::cout << "Example 2: " << result2 << '\n';
+
+// Example 3: Chaining with `transform`
+auto result3 = div(20.0, 4.0)
+                    .transform([](const auto& res) {
+                      return res.success() 
+                          ? fst::result<std::string, std::string>(
+                                fst::success_t, 
+                                "Success! No error") 
+                          : fst::result<std::string, std::string>(
+                                fst::error_t,
+                                res.error()
+                                   .value_or("Unknown error"));
+                    });
+
+std::cout << "Example 3: " << result3 << '\n';
+
+// Example 4: Using `inspect` for side effects
+auto result4 = div(8.0, 2.0)
+                   .inspect([](const fst::result<double, std::string>& res) {
+                     if (auto value = res.success()) {
+                       std::cout << "Success! Result is: " 
+                                 << *value 
+                                 << '\n';
+                     } else {
+                       std::cerr << "Error! Message: " 
+                                 << res.error()
+                                       .value_or("Unknown error") 
+                                 << '\n';
+                     }
+                   });
+
+ std::cout << "Example 4: " << result4 << '\n';
 
   return 0;
-}
-```
-
-```cpp
-// Function to open a file and return a result
-fst::result<std::ifstream, std::string> openFile(const std::string& filename) {
-  std::ifstream file(filename);
-  if (!file.is_open()) {
-    return std::string("Failed to open file: " + filename);
-  }
-  return file;
-}
-
-// Function to close a file
-fst::result<std::ifstream, std::string> closeFile(std::ifstream& file) {
-  file.close();
-  if (file.fail()) {
-    return std::string("Error closing file");
-  }
-  return file;
-}
-
-// Function to process a file
-fst::result<std::ifstream, std::string> processFile(std::ifstream& file) {
-  // Perform file processing here
-  if (!file.good()) {
-    return std::string("Error while processing file");
-  }
-  return file;
 }
 ```
